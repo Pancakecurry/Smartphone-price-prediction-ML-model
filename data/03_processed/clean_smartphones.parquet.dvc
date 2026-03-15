@@ -1,0 +1,5 @@
+outs:
+- md5: f66839acff0a35dcb885bd2124f287ed
+  size: 3907
+  hash: md5
+  path: clean_smartphones.parquet

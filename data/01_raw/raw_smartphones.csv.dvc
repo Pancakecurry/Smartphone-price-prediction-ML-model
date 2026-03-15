@@ -1,0 +1,5 @@
+outs:
+- md5: 4a3ee75bde4cbe18a225dfc9565f6008
+  size: 3956
+  hash: md5
+  path: raw_smartphones.csv
