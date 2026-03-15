@@ -1,0 +1,15 @@
+artifact_path: /Users/arnavuppal/8th sem project/smartphone_price_prediction/mlruns/1/models/m-e8568c4148094936a6466e6cae7463bd/artifacts
+flavors:
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+mlflow_version: 3.10.1
+model_id: m-e8568c4148094936a6466e6cae7463bd
+model_size_bytes: 15706
+model_uuid: m-e8568c4148094936a6466e6cae7463bd
+prompts: null
+run_id: 4e407436ac6a4912a999779385f7109f
+utc_time_created: '2026-03-15 12:14:10.628259'

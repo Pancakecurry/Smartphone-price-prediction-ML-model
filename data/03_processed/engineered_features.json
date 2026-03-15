@@ -1,0 +1,8 @@
+{
+    "features": [
+        "ram_gb",
+        "battery_mah",
+        "camera_mp",
+        "Brand"
+    ]
+}

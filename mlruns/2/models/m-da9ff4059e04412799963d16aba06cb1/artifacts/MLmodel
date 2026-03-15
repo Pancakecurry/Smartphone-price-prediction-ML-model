@@ -1,0 +1,23 @@
+artifact_path: /Users/arnavuppal/8th sem project/smartphone_price_prediction/mlruns/2/models/m-da9ff4059e04412799963d16aba06cb1/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.13.7
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.8.0
+    skops_trusted_types: null
+mlflow_version: 3.10.1
+model_id: m-da9ff4059e04412799963d16aba06cb1
+model_size_bytes: 1221121
+model_uuid: m-da9ff4059e04412799963d16aba06cb1
+prompts: null
+run_id: f0cc510d156d4d8fad8e73013b6d11c4
+utc_time_created: '2026-03-15 19:48:33.469447'

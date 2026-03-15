@@ -1,0 +1,23 @@
+artifact_path: /Users/arnavuppal/8th sem project/smartphone_price_prediction/mlruns/2/models/m-44401e813b8d48c0991784453fc60640/artifacts
+flavors:
+  python_function:
+    config:
+      device: null
+    data: data
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.pytorch
+    pickle_module_name: mlflow.pytorch.pickle_module
+    python_version: 3.13.7
+  pytorch:
+    code: null
+    model_data: data
+    pytorch_version: 2.10.0
+mlflow_version: 3.10.1
+model_id: m-44401e813b8d48c0991784453fc60640
+model_size_bytes: 16461
+model_uuid: m-44401e813b8d48c0991784453fc60640
+prompts: null
+run_id: e3325139b0a64ea5856cbe243d7e3be7
+utc_time_created: '2026-03-15 15:02:09.928899'
