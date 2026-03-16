@@ -1,0 +1,44 @@
+# ── Python runtime artifacts ───────────────────────────────────────────────────
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# ── Secrets & local config ─────────────────────────────────────────────────────
+.env
+.env.*
+
+# ── Version control ────────────────────────────────────────────────────────────
+.git/
+.gitignore
+.gitattributes
+
+# ── macOS artifacts ────────────────────────────────────────────────────────────
+.DS_Store
+**/.DS_Store
+
+# ── Editor & IDE ───────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ── Test artifacts ─────────────────────────────────────────────────────────────
+.pytest_cache/
+htmlcov/
+.coverage
+
+# ── Docs & scratch ─────────────────────────────────────────────────────────────
+*.md
+notebooks/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# IMPORTANT: data/, mlruns/, src/, chromadb/ are NOT ignored.
+# The backend container requires:
+#   data/03_processed/master_smartphones.parquet  → /predict and /api/v1/market-data
+#   data/chromadb/                                → ChromaDB vector store for /chat
+#   mlruns/                                       → MLflow unified Pipeline artifact
+#   src/                                          → All application source code
+# ─────────────────────────────────────────────────────────────────────────────

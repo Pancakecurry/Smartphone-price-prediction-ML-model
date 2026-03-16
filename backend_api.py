@@ -69,48 +69,56 @@ def load_ml_artifacts():
     logger.info("Initializing Backend AI services globally...")
 
     try:
-        mlflow.set_tracking_uri("sqlite:///mlflow.db")
+        # ── 1. Load unified Pipeline via direct filesystem scan ────────────────
+        # We bypass mlflow.search_runs() / SQLite completely: mlflow.db stores
+        # artifact_uri as the original host path which doesn't exist in Docker.
+        # Instead, glob the mlruns tree, load each candidate, and identify the
+        # unified sklearn Pipeline by duck-typing (presence of .steps attribute).
+        import glob as _glob
+        from sklearn.pipeline import Pipeline as _SKPipeline
 
-        # ── 1. Try to load unified Pipeline first ──────────────────────
-        pipeline_runs = mlflow.search_runs(
-            experiment_names=["Smartphone_Price_Prediction"],
-            filter_string="tags.mlflow.runName = 'RandomForest_Pipeline'",
-            order_by=["metrics.RMSE ASC"]
+        all_model_paths = sorted(
+            _glob.glob("mlruns/*/models/*/artifacts/model.pkl", recursive=False),
+            key=lambda p: os.path.getmtime(p),
+            reverse=True  # most recently trained first
         )
 
-        if not pipeline_runs.empty:
-            best_run_id = pipeline_runs.iloc[0]["run_id"]
-            pipeline_uri = f"runs:/{best_run_id}/RandomForest_Pipeline"
-            AppState.rf_pipeline = mlflow.sklearn.load_model(pipeline_uri)
-            logger.info(
-                f"✅ Loaded UNIFIED Pipeline (preprocessor + RF) from RunID: {best_run_id}. "
-                f"No manual scaling needed at inference."
-            )
-        else:
-            # ── 2. Legacy fallback: separate preprocessor + RF model ───
+        AppState.rf_pipeline = None
+        for candidate in all_model_paths:
+            model_dir = os.path.dirname(candidate)
+            uri = f"file://{os.path.abspath(model_dir)}"
+            try:
+                loaded = mlflow.sklearn.load_model(uri)
+                if isinstance(loaded, _SKPipeline) and hasattr(loaded, "steps"):
+                    AppState.rf_pipeline = loaded
+                    logger.info(
+                        f"✅ Loaded UNIFIED Pipeline from: {model_dir} "
+                        f"| steps: {[n for n, _ in loaded.steps]}"
+                    )
+                    break
+            except Exception:
+                continue
+
+        if AppState.rf_pipeline is None:
+            # ── 2. Legacy fallback: separate preprocessor + RF model ──────────
             logger.warning(
-                "No 'RandomForest_Pipeline' MLflow run found. "
+                "No unified sklearn Pipeline found in mlruns/. "
                 "Falling back to separate preprocessor + RF model. "
-                "Run train_random_forest_pipeline() to fix scaling issues."
+                "Run train_random_forest_pipeline() to generate the unified pipeline."
             )
             logger.info("Refitting Scikit-Learn ColumnTransformer (legacy mode)...")
             engineer = SmartphoneFeatureEngineer()
             engineer.fit_transform_pipeline()
             AppState.preprocessor = engineer.preprocessor
 
-            legacy_runs = mlflow.search_runs(
-                experiment_names=["Smartphone_Price_Prediction"],
-                filter_string="tags.mlflow.runName = 'RandomForest_Optuna_Optimized'",
-                order_by=["metrics.RMSE ASC"]
-            )
-            if legacy_runs.empty:
+            if not all_model_paths:
                 raise LookupError(
-                    "No RF model found in MLflow. Run the training pipeline first."
+                    "No RF model found in mlruns/. Run the training pipeline first."
                 )
-            best_run_id = legacy_runs.iloc[0]["run_id"]
-            model_uri = f"runs:/{best_run_id}/model"
+            model_dir = os.path.dirname(all_model_paths[0])
+            model_uri = f"file://{os.path.abspath(model_dir)}"
             AppState.rf_model = mlflow.sklearn.load_model(model_uri)
-            logger.info(f"Loaded legacy RF model from RunID: {best_run_id}")
+            logger.info(f"Loaded legacy RF model from: {model_dir}")
 
         # ── 3. Mount Smartphone RAG Agent ──────────────────────────────
         logger.info("Instantiating Llama 3 LCEL Engine Context...")

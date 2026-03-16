@@ -1,0 +1,61 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# docker-compose.yml — Smartphone Market Analytics Dashboard
+#
+# Brings up two containers that communicate over an internal Docker network:
+#   backend   → FastAPI on port 8000  (ML inference + RAG + market data API)
+#   frontend  → Streamlit on port 8501 (dashboard, reads data from backend)
+#
+# USAGE:
+#   1. Ensure data/, mlruns/, and data/chromadb/ are populated (run run_all.py first)
+#   2. Add your Groq key: echo "GROQ_API_KEY=gsk_..." > .env
+#   3. docker compose up --build
+#   4. Visit http://localhost:8501
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend.Dockerfile
+    container_name: smartphone_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env                        # inject GROQ_API_KEY securely at runtime
+    volumes:
+      # data/ mounted live so Parquet files update without a rebuild.
+      # mlruns/ is NOT mounted — the image uses the version patched by
+      # patch_mlflow.py (all paths rewritten to /app). Mounting the host
+      # mlruns/ would overwrite those patched files with the original
+      # Mac absolute paths and crash the backend on every boot.
+      - ./data:/app/data
+    networks:
+      - app_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')\" || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend.Dockerfile
+    container_name: smartphone_frontend
+    ports:
+      - "8501:8501"
+    environment:
+      # Override the API base URL so Streamlit hits the backend container
+      - API_BASE_URL=http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - app_network
+    restart: unless-stopped
+
+networks:
+  app_network:
+    driver: bridge

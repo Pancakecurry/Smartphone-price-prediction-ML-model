@@ -10,6 +10,7 @@ import pandas as pd
 import plotly.express as px
 import requests
 import time
+import os
 
 # ---------------------------------------------------------
 # Page Configuration & Modern UI Injection
@@ -117,7 +118,7 @@ st.markdown("""
 # ---------------------------------------------------------
 # API Target Configuration
 # ---------------------------------------------------------
-API_BASE_URL = "http://127.0.0.1:8000"
+API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
 
 # ---------------------------------------------------------
 # Data Loading — fully via REST API, no local file access

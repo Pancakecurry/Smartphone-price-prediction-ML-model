@@ -1,4 +1,4 @@
-artifact_path: /Users/arnavuppal/8th sem project/smartphone_price_prediction/mlruns/1/models/m-9998566eb6864eb3aa62417e741c8afd/artifacts
+artifact_path: /app/mlruns/1/models/m-9998566eb6864eb3aa62417e741c8afd/artifacts
 flavors:
   python_function:
     env:

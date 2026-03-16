@@ -1,4 +1,4 @@
-artifact_path: /Users/arnavuppal/8th sem project/smartphone_price_prediction/mlruns/1/models/m-ad34f238f42e4d81a4b6c2607298ff2c/artifacts
+artifact_path: /app/mlruns/1/models/m-ad34f238f42e4d81a4b6c2607298ff2c/artifacts
 flavors:
   sklearn:
     code: null
