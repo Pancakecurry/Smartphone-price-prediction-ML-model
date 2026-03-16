@@ -10,29 +10,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          fetch-depth: 0
-          lfs: true
-      - name: Push to HF Spaces
+          python-version: '3.10'
+          
+      - name: Install Hugging Face CLI
+        run: pip install -U "huggingface_hub[cli]"
+        
+      - name: Push to HF Spaces via API
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          # 1. Delete the GitHub history to bypass past large commits
-          rm -rf .git
-          
-          # 2. Initialize a fresh, single-commit repository
-          git init -b main
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          
-          # 3. Force Git Large File Storage (LFS) for MLflow models
-          git lfs install
-          git lfs track "*.pkl"
-          
-          # 4. Commit the snapshot
-          git add .gitattributes
-          git add .
-          git commit -m "Automated deployment to Hugging Face"
-          
-          # 5. Force push to HF
-          git push --force https://pancakecurry:$HF_TOKEN@huggingface.co/spaces/pancakecurry/smartphone-ai-backend main
+          huggingface-cli login --token $HF_TOKEN
+          huggingface-cli upload pancakecurry/smartphone-ai-backend . . --repo-type space
