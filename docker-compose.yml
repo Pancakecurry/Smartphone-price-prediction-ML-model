@@ -16,12 +16,12 @@ services:
   backend:
     build:
       context: .
-      dockerfile: backend.Dockerfile
+      dockerfile: Dockerfile
     container_name: smartphone_backend
     ports:
       - "8000:8000"
     env_file:
-      - .env                        # inject GROQ_API_KEY securely at runtime
+      - .env # inject GROQ_API_KEY securely at runtime
     volumes:
       # data/ mounted live so Parquet files update without a rebuild.
       # mlruns/ is NOT mounted — the image uses the version patched by
@@ -33,7 +33,7 @@ services:
       - app_network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')\" || exit 1"]
+      test: [ "CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/docs')\" || exit 1" ]
       interval: 30s
       timeout: 10s
       retries: 3
