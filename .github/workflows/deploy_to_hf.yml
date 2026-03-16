@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  sync-to-hub:
+  deploy-to-space:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -19,9 +19,8 @@ jobs:
       - name: Install Hugging Face CLI
         run: pip install -U "huggingface_hub[cli]"
         
-      - name: Push to HF Spaces via API
+      - name: Upload to HF Spaces via API (Bypassing Git LFS completely)
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          huggingface-cli login --token $HF_TOKEN
-          huggingface-cli upload pancakecurry/smartphone-ai-backend . . --repo-type space
+          huggingface-cli upload pancakecurry/smartphone-ai-backend . . --repo-type space --token $HF_TOKEN
