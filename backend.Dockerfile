@@ -41,7 +41,7 @@ RUN python patch_mlflow.py
 # ── 4. Runtime environment ─────────────────────────────────────────────────────
 # GROQ_API_KEY must be injected at runtime via:
 #   docker run -e GROQ_API_KEY=... or Docker Compose env_file: .env
-EXPOSE 8000
+EXPOSE 7860
 
 # ── 4. Start server ────────────────────────────────────────────────────────────
-CMD ["uvicorn", "backend_api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "backend_api:app", "--host", "0.0.0.0", "--port", "7860"]
