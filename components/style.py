@@ -11,9 +11,28 @@ def inject_custom_css():
         }
 
         /* Hide Default UI */
-        #MainMenu {visibility: hidden;}
-        header {visibility: hidden;}
-        footer {visibility: hidden;}
+        /* Hide Default UI */
+        /* 1. Make the top header transparent so it blends with the Apple UI */
+        header { 
+            background-color: transparent !important; 
+        }
+
+        /* 2. Explicitly force the sidebar toggle button to remain visible */
+        [data-testid="collapsedControl"] {
+            display: flex !important;
+            z-index: 999999;
+        }
+
+        /* 3. Hide ONLY the unwanted default Streamlit branding */
+        .stDeployButton { 
+            display: none !important; 
+        }
+        #MainMenu { 
+            visibility: hidden !important; 
+        }
+        footer { 
+            visibility: hidden !important; 
+        }
 
         /* Glassmorphism Cards */
         .glass-card {
