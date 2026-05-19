@@ -31,6 +31,13 @@ inject_custom_css()
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
 
+if 'current_view' not in st.session_state:
+    st.session_state.current_view = 'main_menu'
+
+def navigate_to(view_name):
+    st.session_state.current_view = view_name
+
+
 @st.cache_data(ttl=3600)
 def load_market_data() -> pd.DataFrame:
     try:
@@ -46,9 +53,43 @@ def load_market_data() -> pd.DataFrame:
 df_visuals = load_market_data()
 
 # Global Navigation
-current_page = render_sidebar(len(df_visuals), API_BASE_URL, load_market_data)
+render_sidebar(len(df_visuals), API_BASE_URL, load_market_data)
 
-if current_page == "Market Analytics":
+with st.sidebar:
+    if st.session_state.current_view != 'main_menu':
+        st.markdown("<br><br>", unsafe_allow_html=True) # visual spacing
+        if st.button("← Back to Dashboard", use_container_width=True, type="secondary"):
+            navigate_to('main_menu')
+            st.rerun()
+
+if st.session_state.current_view == 'main_menu':
+    st.markdown("## Main Dashboard")
+    st.markdown("<p style='color:#8E8E93;'>Select a module below to begin.</p>", unsafe_allow_html=True)
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px;">', unsafe_allow_html=True)
+        st.markdown("### 📊 Analytics")
+        if st.button("Open Analytics", use_container_width=True):
+            navigate_to('analytics_view')
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+    with col2:
+        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px;">', unsafe_allow_html=True)
+        st.markdown("### 🤖 AI Assistant")
+        if st.button("Open AI Assistant", use_container_width=True):
+            navigate_to('ai_view')
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+    with col3:
+        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px;">', unsafe_allow_html=True)
+        st.markdown("### 🌩️ Price Predictor")
+        if st.button("Open Predictor", use_container_width=True):
+            navigate_to('price_predictor_view')
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+elif st.session_state.current_view == 'analytics_view':
     st.markdown("## Market Analytics")
     st.markdown("<p style='color:#8E8E93;'>Decoupled ML Predictions & RAG Analytics</p>", unsafe_allow_html=True)
     
@@ -123,7 +164,7 @@ if current_page == "Market Analytics":
     else:
         st.warning("Production dataset missing. Please sync live data.")
 
-elif current_page == "Price Predictor":
+elif st.session_state.current_view == 'price_predictor_view':
     st.markdown("## Price Predictor")
     st.markdown("<p style='color:#8E8E93;'>Hardware Valuation Engine natively via Random Forest</p>", unsafe_allow_html=True)
     
@@ -191,5 +232,5 @@ elif current_page == "Price Predictor":
             except Exception as e:
                 st.error(f"Prediction Pipeline Error: {e}")
 
-elif current_page == "AI Assistant":
+elif st.session_state.current_view == 'ai_view':
     render_chat_interface(API_BASE_URL)

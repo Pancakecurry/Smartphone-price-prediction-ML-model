@@ -7,11 +7,7 @@ def render_sidebar(df_length, api_base_url, load_data_func):
         st.markdown("<h2 style='text-align: center; font-weight: 800; letter-spacing: -0.05em;'>📱 Market AI</h2>", unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         
-        page = st.radio(
-            "Navigation",
-            ["Market Analytics", "Price Predictor", "AI Assistant"],
-            label_visibility="hidden"
-        )
+        # Removed st.radio navigation in favor of session_state routing
         
         st.markdown("<br><br><br>", unsafe_allow_html=True)
         st.markdown("#### System Status")
@@ -51,4 +47,3 @@ def render_sidebar(df_length, api_base_url, load_data_func):
                         st.error(f"❌ Sync failed: {result_msg}")
             except Exception as e:
                 st.error("❌ Sync Error.")
-        return page
