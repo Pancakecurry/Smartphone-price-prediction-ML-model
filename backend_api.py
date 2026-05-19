@@ -52,74 +52,73 @@ class ChatQuery(BaseModel):
 # ---------------------------------------------------------
 # Global App State (Loaded on Startup)
 # ---------------------------------------------------------
-class AppState:
-    rf_pipeline  = None   # Unified sklearn Pipeline(preprocessor → RF) — primary
-    preprocessor = None   # Legacy fallback: separate ColumnTransformer
-    rf_model     = None   # Legacy fallback: separate RF model
-    ai_agent     = None
+class AppState: 
+    rf_pipeline = None # Unified sklearn Pipeline(preprocessor → RF) — primary 
+    preprocessor = None # Legacy fallback: separate ColumnTransformer 
+    rf_model = None # Legacy fallback: separate RF model 
+    ai_agent = None 
 
-@app.on_event("startup")
-def load_ml_artifacts():
-    """
-    Initializes and caches all ML artifacts on server boot.
-    Prefers the unified Pipeline artifact ('RandomForest_Pipeline') which bundles
-    preprocessing + model into a single object, eliminating scaling mismatch.
-    Falls back to loading the separate preprocessor + RF model for backward compatibility.
-    """
-    logger.info("Initializing Backend AI services globally...")
+@app.on_event("startup") 
+def load_ml_artifacts(): 
+    """ 
+    Initializes and caches all ML artifacts on server boot. 
+    Prefers the unified Pipeline artifact ('RandomForest_Pipeline') which bundles 
+    preprocessing + model into a single object, eliminating scaling mismatch. 
+    Falls back to loading the separate preprocessor + RF model for backward compatibility. 
+    """ 
+    logger.info("Initializing Backend AI services globally...") 
 
-    try:
-        # ── 1. Load unified Pipeline via direct filesystem scan ────────────────
-        # We bypass mlflow.search_runs() / SQLite completely: mlflow.db stores
-        # artifact_uri as the original host path which doesn't exist in Docker.
-        # Instead, glob the mlruns tree, load each candidate, and identify the
-        # unified sklearn Pipeline by duck-typing (presence of .steps attribute).
-        import glob as _glob
-        from sklearn.pipeline import Pipeline as _SKPipeline
+    try: 
+        # ── 1. Load unified Pipeline via direct filesystem scan ──────────────── 
+        # We bypass mlflow.search_runs() / SQLite completely: mlflow.db stores 
+        # artifact_uri as the original host path which doesn't exist in Docker. 
+        # Instead, glob the mlruns tree, load each candidate, and identify the 
+        # unified sklearn Pipeline by duck-typing (presence of .steps attribute). 
+        import glob as _glob 
+        from sklearn.pipeline import Pipeline as _SKPipeline 
 
-        all_model_paths = sorted(
-            _glob.glob("mlruns/*/models/*/artifacts/model.pkl", recursive=False),
-            key=lambda p: os.path.getmtime(p),
-            reverse=True  # most recently trained first
-        )
+        all_model_paths = sorted( 
+            _glob.glob("mlruns/*/models/*/artifacts/model.pkl", recursive=False), 
+            key=lambda p: os.path.getmtime(p), 
+            reverse=True # most recently trained first 
+        ) 
 
-        AppState.rf_pipeline = None
-        for candidate in all_model_paths:
-            model_dir = os.path.dirname(candidate)
-            uri = f"file://{os.path.abspath(model_dir)}"
-            try:
-                loaded = mlflow.sklearn.load_model(uri)
-                if isinstance(loaded, _SKPipeline) and hasattr(loaded, "steps"):
-                    AppState.rf_pipeline = loaded
-                    logger.info(
-                        f"✅ Loaded UNIFIED Pipeline from: {model_dir} "
-                        f"| steps: {[n for n, _ in loaded.steps]}"
-                    )
-                    break
-            except Exception:
-                continue
+        AppState.rf_pipeline = None 
+        for candidate in all_model_paths: 
+            model_dir = os.path.dirname(candidate) 
+            uri = f"file://{os.path.abspath(model_dir)}" 
+            try: 
+                loaded = mlflow.sklearn.load_model(uri) 
+                if isinstance(loaded, _SKPipeline) and hasattr(loaded, "steps"): 
+                    AppState.rf_pipeline = loaded 
+                    logger.info( 
+                        f"✅ Loaded UNIFIED Pipeline from: {model_dir} " 
+                        f"| steps: {[n for n, _ in loaded.steps]}" 
+                    ) 
+                    break 
+            except Exception: 
+                continue 
 
-        if AppState.rf_pipeline is None:
-            # ── 2. Legacy fallback: separate preprocessor + RF model ──────────
-            logger.warning(
-                "No unified sklearn Pipeline found in mlruns/. "
-                "Falling back to separate preprocessor + RF model. "
-                "Run train_random_forest_pipeline() to generate the unified pipeline."
-            )
-            logger.info("Refitting Scikit-Learn ColumnTransformer (legacy mode)...")
-            engineer = SmartphoneFeatureEngineer()
-            engineer.fit_transform_pipeline()
-            AppState.preprocessor = engineer.preprocessor
+        if AppState.rf_pipeline is None: 
+            # ── 2. Legacy fallback: separate preprocessor + RF model ────────── 
+            logger.warning( 
+                "No unified sklearn Pipeline found in mlruns/. " 
+                "Falling back to separate preprocessor + RF model. " 
+                "Run train_random_forest_pipeline() to generate the unified pipeline." 
+            ) 
+            logger.info("Refitting Scikit-Learn ColumnTransformer (legacy mode)...") 
+            engineer = SmartphoneFeatureEngineer() 
+            engineer.fit_transform_pipeline() 
+            AppState.preprocessor = engineer.preprocessor 
 
-            if not all_model_paths:
-                raise LookupError(
-                    "No RF model found in mlruns/. Run the training pipeline first."
-                )
-            model_dir = os.path.dirname(all_model_paths[0])
-            model_uri = f"file://{os.path.abspath(model_dir)}"
-            AppState.rf_model = mlflow.sklearn.load_model(model_uri)
+            if not all_model_paths: 
+                raise LookupError( 
+                    "No RF model found in mlruns/. Run the training pipeline first." 
+                ) 
+            model_dir = os.path.dirname(all_model_paths[0]) 
+            model_uri = f"file://{os.path.abspath(model_dir)}" 
+            AppState.rf_model = mlflow.sklearn.load_model(model_uri) 
             logger.info(f"Loaded legacy RF model from: {model_dir}")
-
         # ── 3. Mount Smartphone RAG Agent ──────────────────────────────
         logger.info("Instantiating Llama 3 LCEL Engine Context...")
         AppState.ai_agent = SmartphoneAI()
@@ -136,10 +135,7 @@ def load_ml_artifacts():
 def predict_price(specs: PhoneSpecs):
     """
     Accepts raw phone specs and returns a predicted price.
-
-    If a unified Pipeline is loaded (AppState.rf_pipeline), passes the raw input
-    directly — the pipeline handles ColumnTransformer scaling internally.
-    Falls back to the legacy separate-preprocessor path if no pipeline is available.
+    Uses the unified Pipeline which guarantees feature alignment.
     """
     import pandas as pd
 
@@ -147,7 +143,6 @@ def predict_price(specs: PhoneSpecs):
         raise HTTPException(status_code=503, detail="ML models not initialized. Check server logs.")
 
     try:
-        # Build a raw Pandas DataFrame matching the training schema exactly
         raw_input = pd.DataFrame([{
             "Brand":       specs.Brand,
             "ram_gb":      specs.ram_gb,
@@ -157,10 +152,10 @@ def predict_price(specs: PhoneSpecs):
         }])
 
         if AppState.rf_pipeline is not None:
-            # ✅ Unified pipeline path — no manual scaling
+            # ✅ Unified pipeline path — features are guaranteed to align
             prediction = AppState.rf_pipeline.predict(raw_input)
         else:
-            # Legacy path — manual transform then predict
+            # Legacy path
             X_scaled = AppState.preprocessor.transform(raw_input)
             prediction = AppState.rf_model.predict(X_scaled)
 
@@ -169,7 +164,6 @@ def predict_price(specs: PhoneSpecs):
     except Exception as e:
         logger.error(f"Prediction Pipeline Crash: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
 @app.post("/chat")
 def chat_with_agent(chat_query: ChatQuery):
     """
@@ -271,20 +265,24 @@ def _run_pipeline_background() -> None:
         from src.models.tree_models import TreeModelTrainer
         trainer = TreeModelTrainer()
         trainer.train_random_forest_pipeline(n_trials=5)
-        # Reload the freshly trained pipeline from MLflow
-        mlflow.set_tracking_uri("sqlite:///mlflow.db")
-        pipeline_runs = mlflow.search_runs(
-            experiment_names=["Smartphone_Price_Prediction"],
-            filter_string="tags.mlflow.runName = 'RandomForest_Pipeline'",
-            order_by=["metrics.RMSE ASC"]
-        )
-        if not pipeline_runs.empty:
-            best_run_id = pipeline_runs.iloc[0]["run_id"]
-            AppState.rf_pipeline = mlflow.sklearn.load_model(
-                f"runs:/{best_run_id}/RandomForest_Pipeline"
-            )
+        
+        # FIX: Bypass SQLite, strictly target the Unified Pipeline folder to prevent feature misalignment
+        import os
+        logger.info("[BG] Locating newly trained unified pipeline directly from filesystem...")
+        
+        new_model_dirs = []
+        for root, dirs, files in os.walk("mlruns"):
+            # CRITICAL: We MUST ensure we grab the Pipeline artifact, not the bare estimator
+            if "MLmodel" in files and "RandomForest_Pipeline" in root:
+                new_model_dirs.append(root)
+                
+        if new_model_dirs:
+            best_model_dir = max(new_model_dirs, key=os.path.getmtime)
+            AppState.rf_pipeline = mlflow.sklearn.load_model(best_model_dir)
             AppState.rf_model = None   # clear legacy artifact
-            logger.info("[BG] Unified Pipeline hot-swapped into AppState.")
+            logger.info(f"[BG] Unified Pipeline hot-swapped perfectly from: {best_model_dir}")
+        else:
+            logger.error("[BG] Failed to locate the Unified Pipeline in mlruns.")
 
         # Phase 4: Rebuild vector DB so /chat reflects new data
         logger.info("[BG] Rebuilding ChromaDB vector store...")

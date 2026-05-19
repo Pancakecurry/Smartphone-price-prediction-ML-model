@@ -1,3 +1,11 @@
+---
+title: Smartphone AI Backend
+emoji: 🚀
+colorFrom: blue
+colorTo: red
+sdk: docker
+pinned: false
+---
 # Smartphone Price Prediction Dashboard - Data Engineering
 
 ## Architecture Overview
