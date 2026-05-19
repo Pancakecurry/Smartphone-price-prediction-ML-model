@@ -31,12 +31,6 @@ inject_custom_css()
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
 
-if 'current_view' not in st.session_state:
-    st.session_state.current_view = 'dashboard'
-
-def navigate_to(view_name):
-    st.session_state.current_view = view_name
-
 
 @st.cache_data(ttl=3600)
 def load_market_data() -> pd.DataFrame:
@@ -53,44 +47,11 @@ def load_market_data() -> pd.DataFrame:
 df_visuals = load_market_data()
 
 # Global Navigation
-render_sidebar(len(df_visuals), API_BASE_URL, load_market_data)
+selected_page = render_sidebar()
 
-if st.session_state.current_view == 'dashboard':
-    st.markdown("## Global Dashboard")
-    st.markdown("<p style='color:#8E8E93;'>Select a module below to begin.</p>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px; height: 100%;">', unsafe_allow_html=True)
-        st.markdown("### 📊 Market Analytics")
-        if st.button("Open Analytics", use_container_width=True):
-            navigate_to('analytics')
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px; height: 100%; margin-top: 20px;">', unsafe_allow_html=True)
-        st.markdown("### 🌩️ Price Predictor")
-        if st.button("Open Predictor", use_container_width=True):
-            navigate_to('price_predictor')
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
+# ── MAIN VIEW ROUTING ─────────────────────────────────────────────
 
-    with col2:
-        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px; height: 100%;">', unsafe_allow_html=True)
-        st.markdown("### 🤖 AI Assistant")
-        if st.button("Open AI Assistant", use_container_width=True):
-            navigate_to('ai')
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-        
-        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px; height: 100%; margin-top: 20px;">', unsafe_allow_html=True)
-        st.markdown("### 🔄 Sync Market Data")
-        if st.button("Open Sync & Settings", use_container_width=True):
-            navigate_to('sync')
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-elif st.session_state.current_view == 'analytics':
+if selected_page == "📈 Market Analytics":
     st.markdown("## Market Analytics")
     st.markdown("<p style='color:#8E8E93;'>Decoupled ML Predictions & RAG Analytics</p>", unsafe_allow_html=True)
     
@@ -165,8 +126,8 @@ elif st.session_state.current_view == 'analytics':
     else:
         st.warning("Production dataset missing. Please sync live data.")
 
-elif st.session_state.current_view == 'price_predictor':
-    st.markdown("## Price Predictor")
+elif selected_page == "⚖️ Smartphone Comparison":
+    st.markdown("## Smartphone Comparison Model")
     st.markdown("<p style='color:#8E8E93;'>Hardware Valuation Engine natively via Random Forest</p>", unsafe_allow_html=True)
     
     valid_brands = df_visuals["Brand"].unique().tolist() if len(df_visuals) > 0 else ["Apple", "Samsung", "Google", "OnePlus", "Xiaomi", "Vivo", "Oppo", "Motorola"]
@@ -233,11 +194,24 @@ elif st.session_state.current_view == 'price_predictor':
             except Exception as e:
                 st.error(f"Prediction Pipeline Error: {e}")
 
-elif st.session_state.current_view == 'ai':
+elif selected_page == "🤖 AI Assistant":
     render_chat_interface(API_BASE_URL)
 
-elif st.session_state.current_view == 'sync':
-    st.markdown("## Data Sync & Settings")
+elif selected_page == "⚙️ System Settings":
+    st.markdown("## System Settings")
+    st.markdown("<p style='color:#8E8E93;'>Backend Service Health and Connectivity</p>", unsafe_allow_html=True)
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    try:
+        requests.get(f"{API_BASE_URL}/docs", timeout=3)
+        st.success("📡 Backend: Online")
+    except Exception:
+        st.error("📡 Backend: Offline")
+        
+    st.info(f"🗄️ {len(df_visuals):,} devices tracked")
+    st.markdown('</div>', unsafe_allow_html=True)
+
+elif selected_page == "🔄 Sync Live Data":
+    st.markdown("## Sync Live Market Data")
     st.markdown("<p style='color:#8E8E93;'>Manage your data pipeline and fetch live updates</p>", unsafe_allow_html=True)
     
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
