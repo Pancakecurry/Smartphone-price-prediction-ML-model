@@ -32,7 +32,7 @@ inject_custom_css()
 API_BASE_URL = os.getenv("API_BASE_URL", "http://127.0.0.1:8000")
 
 if 'current_view' not in st.session_state:
-    st.session_state.current_view = 'main_menu'
+    st.session_state.current_view = 'dashboard'
 
 def navigate_to(view_name):
     st.session_state.current_view = view_name
@@ -55,41 +55,42 @@ df_visuals = load_market_data()
 # Global Navigation
 render_sidebar(len(df_visuals), API_BASE_URL, load_market_data)
 
-with st.sidebar:
-    if st.session_state.current_view != 'main_menu':
-        st.markdown("<br><br>", unsafe_allow_html=True) # visual spacing
-        if st.button("← Back to Dashboard", use_container_width=True, type="secondary"):
-            navigate_to('main_menu')
-            st.rerun()
-
-if st.session_state.current_view == 'main_menu':
-    st.markdown("## Main Dashboard")
+if st.session_state.current_view == 'dashboard':
+    st.markdown("## Global Dashboard")
     st.markdown("<p style='color:#8E8E93;'>Select a module below to begin.</p>", unsafe_allow_html=True)
     
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
-        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px;">', unsafe_allow_html=True)
-        st.markdown("### 📊 Analytics")
+        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px; height: 100%;">', unsafe_allow_html=True)
+        st.markdown("### 📊 Market Analytics")
         if st.button("Open Analytics", use_container_width=True):
-            navigate_to('analytics_view')
+            navigate_to('analytics')
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
-    with col2:
-        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px;">', unsafe_allow_html=True)
-        st.markdown("### 🤖 AI Assistant")
-        if st.button("Open AI Assistant", use_container_width=True):
-            navigate_to('ai_view')
-            st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-    with col3:
-        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px;">', unsafe_allow_html=True)
+        
+        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px; height: 100%; margin-top: 20px;">', unsafe_allow_html=True)
         st.markdown("### 🌩️ Price Predictor")
         if st.button("Open Predictor", use_container_width=True):
-            navigate_to('price_predictor_view')
+            navigate_to('price_predictor')
             st.rerun()
         st.markdown('</div>', unsafe_allow_html=True)
 
-elif st.session_state.current_view == 'analytics_view':
+    with col2:
+        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px; height: 100%;">', unsafe_allow_html=True)
+        st.markdown("### 🤖 AI Assistant")
+        if st.button("Open AI Assistant", use_container_width=True):
+            navigate_to('ai')
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+        
+        st.markdown('<div class="glass-card" style="text-align:center; padding: 20px; height: 100%; margin-top: 20px;">', unsafe_allow_html=True)
+        st.markdown("### 🔄 Sync Market Data")
+        if st.button("Open Sync & Settings", use_container_width=True):
+            navigate_to('sync')
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+elif st.session_state.current_view == 'analytics':
     st.markdown("## Market Analytics")
     st.markdown("<p style='color:#8E8E93;'>Decoupled ML Predictions & RAG Analytics</p>", unsafe_allow_html=True)
     
@@ -164,7 +165,7 @@ elif st.session_state.current_view == 'analytics_view':
     else:
         st.warning("Production dataset missing. Please sync live data.")
 
-elif st.session_state.current_view == 'price_predictor_view':
+elif st.session_state.current_view == 'price_predictor':
     st.markdown("## Price Predictor")
     st.markdown("<p style='color:#8E8E93;'>Hardware Valuation Engine natively via Random Forest</p>", unsafe_allow_html=True)
     
@@ -232,5 +233,46 @@ elif st.session_state.current_view == 'price_predictor_view':
             except Exception as e:
                 st.error(f"Prediction Pipeline Error: {e}")
 
-elif st.session_state.current_view == 'ai_view':
+elif st.session_state.current_view == 'ai':
     render_chat_interface(API_BASE_URL)
+
+elif st.session_state.current_view == 'sync':
+    st.markdown("## Data Sync & Settings")
+    st.markdown("<p style='color:#8E8E93;'>Manage your data pipeline and fetch live updates</p>", unsafe_allow_html=True)
+    
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    col_sync1, col_sync2 = st.columns([2, 1])
+    with col_sync1:
+        st.markdown("### 🔄 Sync Live Market Data")
+        st.markdown("Fetch the latest device information from DuckDuckGo/ChromaDB and update the analytics dashboard natively.")
+    with col_sync2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("Start Live Sync", use_container_width=True, type="primary"):
+            try:
+                trigger = requests.post(f"{API_BASE_URL}/api/v1/trigger-pipeline", timeout=10).json()
+                if trigger.get("status") == "already_running":
+                    st.warning("⏳ Sync already running.")
+                else:
+                    with st.spinner("Fetching data & retraining..."):
+                        import time
+                        success = False
+                        result_msg = "Timeout."
+                        for _ in range(60):
+                            time.sleep(2)
+                            try:
+                                poll = requests.get(f"{API_BASE_URL}/api/v1/pipeline-status", timeout=5).json()
+                            except requests.exceptions.RequestException:
+                                continue
+                            if not poll.get("running", True):
+                                result_msg = poll.get("last_result", "Done.")
+                                success = "failed" not in result_msg.lower()
+                                break
+                    if success:
+                        st.toast("✅ Sync complete!", icon="✅")
+                        load_market_data.clear()
+                        st.rerun()
+                    else:
+                        st.error(f"❌ Sync failed: {result_msg}")
+            except Exception as e:
+                st.error("❌ Sync Error.")
+    st.markdown('</div>', unsafe_allow_html=True)
